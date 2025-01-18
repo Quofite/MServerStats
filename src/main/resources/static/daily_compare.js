@@ -9,22 +9,23 @@ const colors = [
 	"#d2691e",
 	"#00ffff",
 ];
-const serverMenu = document.server.servers;
-var serversArraySC = "";
+
+var serversArraySC = new URLSearchParams(document.location.search).get(
+	"servers",
+);
+var date = new URLSearchParams(document.location.search).get("date");
+
 var serversArray = [];
+var serversIDsArray = serversArraySC.split(";");
 
-function serverChosen() {
-	if (serversArray.length > 9) {
-		alert("Достигнут максимум серверов для сравнения");
-		return;
+async function getHostnames() {
+	for (var i = 0; i < serversIDsArray.length - 1; i++) {
+		var hostname = await fetch(
+			"http://localhost:8080/hostname?id=" + serversIDsArray[i],
+		);
+
+		serversArray.push(await hostname.text());
 	}
-
-	const server = serverMenu.options[serverMenu.selectedIndex];
-	var serverName = server.text;
-	var serverId = server.value;
-
-	serversArraySC += serverId + ";";
-	serversArray.push(serverName);
 }
 
 function drawGraphs(data) {
@@ -39,19 +40,10 @@ function drawGraphs(data) {
 		series.normal().stroke(colors[i], 1);
 		series.hovered().stroke(colors[i], 2);
 		series.selected().stroke(colors[i], 4);
-
-		series.listen("pointClick", (e) => {
-			window.open(
-				"http://localhost:8080/dailycompare?servers=" +
-					serversArraySC +
-					"&date=" +
-					e.point.get("x"),
-			);
-		});
 	}
 
 	chart.container("container");
-	chart.title("Средний онлайн ежедневно");
+	chart.title("Онлайн за день");
 
 	var legend = anychart.standalones.legend();
 	var legendItems = [];
@@ -75,7 +67,10 @@ function drawGraphs(data) {
 
 async function loadData() {
 	var response = await fetch(
-		"http://localhost:8080/comparedata?servers=" + serversArraySC,
+		"http://localhost:8080/dailycomparedata?servers=" +
+			serversArraySC +
+			"&date=" +
+			date,
 	);
 
 	if (response.ok) {
@@ -90,7 +85,7 @@ async function loadData() {
 			for (var j = 0; j < serverData.length; j++) {
 				let jsonEntry = serverData[j];
 
-				let x = jsonEntry.day + "." + jsonEntry.month + "." + jsonEntry.year;
+				let x = jsonEntry.hour + ":" + jsonEntry.minute;
 				let obj = {
 					x: x,
 					value: jsonEntry.online,
@@ -107,3 +102,6 @@ async function loadData() {
 		alert("Словил маслину с кодом " + response.status);
 	}
 }
+
+getHostnames();
+loadData();

@@ -105,7 +105,7 @@ public class MainController {
     }
 
     @GetMapping(value = "/graphdaily", produces = "application/json")
-    public ResponseEntity<?> graphDailyData(@RequestParam("id") int serverId, @RequestParam("date") String date) {
+    public ResponseEntity<?> graphDailyData(@RequestParam("id") String serverId, @RequestParam("date") String date) {
         List<GraphDataModel> stats = dbService.getDailyData(serverId, date);
         int maxOnline = dbService.getMaxDailyOnline(serverId, date);
         Object[] dto = new Object[] { maxOnline, stats };
@@ -118,6 +118,12 @@ public class MainController {
     public String writeCache() {
         cache.writeCache();
         return "updated";
+    }
+
+    @GetMapping("/hostname")
+    public ResponseEntity<?> getHostname(@RequestParam("id") int serverId) {
+        String hostname = dbService.getHostnameByServerId(serverId);
+        return new ResponseEntity<>(hostname, HttpStatus.OK);
     }
 
     // -----
@@ -148,6 +154,26 @@ public class MainController {
         List<List<GraphDataModel>> data = new ArrayList<>();
         for(String server : serversArray) {
             data.add(dataAnalysisService.getGraphData(server, dataAnalysisService.averagePlayersPerDay(server).getMaxDailyAverage(), start, stop));
+        }
+
+        return new ResponseEntity<>(data, HttpStatus.OK);
+    }
+
+    // -------
+
+    @GetMapping("/dailycompare")
+    public String dailyCompare(@RequestParam("servers") String servers, @RequestParam("date") String date, Model model) {
+        model.addAttribute("date", date);
+        return "daily_compare";
+    }
+
+    @GetMapping("/dailycomparedata")
+    public ResponseEntity<?> dailyCompareData(@RequestParam("servers") String servers, @RequestParam("date") String date) {
+        String[] serversArray = servers.split(";");
+
+        List<List<GraphDataModel>> data = new ArrayList<>();
+        for(String server : serversArray) {
+            data.add(dbService.getDailyData(server, date));
         }
 
         return new ResponseEntity<>(data, HttpStatus.OK);

@@ -45,13 +45,13 @@ public class DBService {
     }
 
     // returns GraphDataModel objects list filled with record time, online players amount and current map at given day
-    public List<GraphDataModel> getDailyData(int serverId, String dateString) {
+    public List<GraphDataModel> getDailyData(String serverId, String dateString) {
 
         // this two lines creates data extraction time bounds - from `date` to `nextDate`
         Timestamp date = utils.stringToTimestamp(dateString, 0);
         Timestamp nextDate = utils.stringToTimestamp(dateString, 1);
 
-        String sql = String.format("SELECT * FROM statistics WHERE server_id=%d AND time >= timestamp '%s' AND time < timestamp '%s' ORDER BY id;",
+        String sql = String.format("SELECT * FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s' ORDER BY id;",
                 serverId, date, nextDate);
         List<Map<String, Object>> rows = template.queryForList(sql);
 
@@ -70,12 +70,12 @@ public class DBService {
         return stats;
     }
 
-    public int getMaxDailyOnline(int serverId, String dateString) {
+    public int getMaxDailyOnline(String serverId, String dateString) {
         // same as in getDailyData(..)
         Timestamp date = utils.stringToTimestamp(dateString, 0);
         Timestamp nextDay = utils.stringToTimestamp(dateString, 1);
 
-        String sql = String.format("SELECT MAX(players) FROM statistics WHERE server_id=%d AND time >= timestamp '%s' AND time < timestamp '%s';",
+        String sql = String.format("SELECT MAX(players) FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s';",
                 serverId, date, nextDay);
 
         return (int) template.queryForMap(sql).get("max");
