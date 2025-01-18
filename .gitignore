@@ -1,0 +1,12 @@
+/.git
+/.mvn
+.idea
+
+mvnw
+mvnw.cmd
+qodana.yaml
+/target
+TODO_LIST.txt
+
+/src/test
+/src/main/resources/application.properties
