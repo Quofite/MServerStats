@@ -7,24 +7,24 @@
 </head>
 
 <body>
-
-  <h2 th:text="${hostname}"></h2>
   <button onclick="toMainPage()">На главную</button>
   <hr>
 
   <form name="server">
     <label for="servers"> Сервер: </label>
-    <select name="servers" id="servers">
+    <select name="servers" id="servers" onchange="serverChosen()">
       <option th:each="server : ${servers}" th:value="${server.mid}" th:text="${server.hostname}"></option>
     </select>
   </form>
 
-  <button onclick="serverChosen()">Добавить</button>
+  <button style="margin-top: 1%;" onclick="loadData()">Сравнить</button>
 
-  <button onclick="loadData()">Сравнить</button>
+  <div id="serversList" style="margin-right: 2%; margin-left: auto; margin-top: -3%; width: 50%;"></div>
 
-  <div id="container" style="width:100%;height:900px;"></div>
-  <div id="legend" style="display:flex;"></div>
+  <div style="margin-top: 3%;">
+    <div id="container" style="width:100%;height:900px;"></div>
+    <div id="legend" style="display:flex;"></div>
+  </div>
 </body>
 
 <script src="./index.js"></script>
