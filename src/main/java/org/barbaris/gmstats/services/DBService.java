@@ -3,6 +3,7 @@ package org.barbaris.gmstats.services;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.barbaris.gmstats.models.GraphDataModel;
+import org.barbaris.gmstats.models.InstantDataModel;
 import org.barbaris.gmstats.models.ServerModel;
 import org.barbaris.gmstats.models.Values;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,6 +116,20 @@ public class DBService {
         }
 
         return servers;
+    }
+
+    public InstantDataModel getInstantData(String serverId, String timestamp) {
+        InstantDataModel data = new InstantDataModel();
+
+        String sql = String.format("SELECT hostname, players, map FROM statistics WHERE server_id=%s AND to_char(time, 'DD.MM.YYYY HH24:MI')='%s';", serverId, timestamp);
+        Map<String, Object> row = template.queryForMap(sql);
+
+        data.setOnline((Integer) row.get("players"));
+        data.setMap((String) row.get("map"));
+        data.setTimestamp(timestamp);
+        data.setHostname((String) row.get("hostname"));
+
+        return data;
     }
 
     // --------------------- DATABASE MANIPULATING SCRIPTS

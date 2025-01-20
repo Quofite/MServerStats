@@ -40,6 +40,13 @@ function drawGraphs(data) {
 		series.normal().stroke(colors[i], 1);
 		series.hovered().stroke(colors[i], 2);
 		series.selected().stroke(colors[i], 4);
+
+		series.listen("pointClick", (e) => {
+			window.open(
+				"http://localhost:8080/instant?servers=" +
+					serversArraySC + "&date=" + date + "&time=" + e.point.get("x"),
+			);
+		});
 	}
 
 	chart.container("container");

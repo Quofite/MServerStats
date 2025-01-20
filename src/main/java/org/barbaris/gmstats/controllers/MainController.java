@@ -159,6 +159,19 @@ public class MainController {
         return new ResponseEntity<>(data, HttpStatus.OK);
     }
 
+    @GetMapping("/instant")
+    public String getInstantData(@RequestParam("servers") String servers, @RequestParam("date") String date, @RequestParam("time") String time, Model model) {
+        String[] serversArray = servers.split(";");
+
+        List<InstantDataModel> data = new ArrayList<>();
+        for(String server : serversArray) {
+            data.add(dbService.getInstantData(server, date + " " + time));
+        }
+
+        model.addAttribute("data", data);
+        return "instant_data";
+    }
+
     // -------
 
     @GetMapping("/dailycompare")

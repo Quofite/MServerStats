@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+
+<body>
+  <div style="margin-top: 0.3%;">
+    <button onclick="toMainPage()">Назад</button>
+  </div>
+
+  <div style="margin-top: 2%; margin-left: 2%;" th:each="server : ${data}">
+    <h3 th:text="${server.hostname}"></h3>
+    <p th:text="'Время записи: ' + ${server.timestamp}"></p>
+    <p th:text="'Карта: ' + ${server.map} + ' | Онлайн ' + ${server.online} + ' человек(-а)'"></p>
+    <hr style="width: 35%; margin-left: 0; margin-right: auto;">
+  </div>
+
+</body>
+
+<script src="/index.js"></script>
+
+</html>
