@@ -145,7 +145,7 @@ public class MainController {
 
         List<List<GraphDataModel>> data = new ArrayList<>();
         for(String server : serversArray) {
-            data.add(dataAnalysisService.getGraphData(server, dataAnalysisService.averagePlayersPerDay(server).getMaxDailyAverage(), start, stop));
+            data.add(dataAnalysisService.getGraphData(server, 0, start, stop));
         }
 
         return new ResponseEntity<>(data, HttpStatus.OK);

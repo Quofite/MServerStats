@@ -22,6 +22,8 @@ public class DataAnalysisService {
     private Utils utils;
     @Autowired
     private CacheService cache;
+    @Autowired
+    private DBService db;
 
     /*
     *           returns all server data related to average numbers computing
@@ -223,6 +225,25 @@ public class DataAnalysisService {
         String sql = String.format("SELECT * FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s' ORDER BY id;",
                 serverId, start, stop);
         ArrayList<GraphDataModel> data = new ArrayList<>();
+
+        Timestamp serverStart = db.serverEdgeTime(serverId, true);
+        LocalDateTime serverStartLDT = serverStart.toLocalDateTime().truncatedTo(ChronoUnit.DAYS);
+        LocalDateTime recordsStartLDT = start.toLocalDateTime().truncatedTo(ChronoUnit.DAYS);
+
+        if((!serverStartLDT.equals(recordsStartLDT)) && maxAverageOnline == 0) {
+            long gap = (Timestamp.valueOf(serverStartLDT).getTime() - Timestamp.valueOf(recordsStartLDT).getTime()) / Values.MILLISECONDS_A_DAY;
+            for(int i = 0; i < gap; i++) {
+                LocalDateTime day = recordsStartLDT.plusDays(i);
+
+                GraphDataModel graphData = new GraphDataModel();
+                graphData.setYear(String.valueOf(((day.getYear()))));
+                graphData.setMonth(day.getMonthValue() < 10 ? "0" + day.getMonthValue() : String.valueOf(day.getMonthValue()));
+                graphData.setDay(day.getDayOfMonth() < 10 ? "0" + day.getDayOfMonth() : String.valueOf(day.getDayOfMonth()));
+                graphData.setOnline(0);
+
+                data.add(graphData);
+            }
+        }
 
         List<Map<String, Object>> rows = template.queryForList(sql);
 

@@ -10,7 +10,7 @@ const colors = [
 	"#00ffff",
 ];
 const serverMenu = document.server.servers;
-const serversArraySC = "";
+let serversArraySC = "";
 const serversArray = [];
 
 function deleteServer(serverName) {
