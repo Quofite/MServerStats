@@ -10,13 +10,11 @@ const colors = [
 	"#00ffff",
 ];
 const serverMenu = document.server.servers;
-let serversArraySC = "";
-let serversArray = [];
+const serversArraySC = "";
+const serversArray = [];
 
 function deleteServer(serverName) {
 	const serverIndex = serversArray.indexOf(serverName);
-	let serverId;
-
 	serversArray.splice(serverIndex, 1);
 
 	const serversIDsArray = serversArraySC.split(";");
@@ -43,13 +41,13 @@ function serverChosen() {
 	serversArraySC += serverId + ";";
 	serversArray.push(serverName);
 
-	const deleteButton =
-		`<button style="width=5%; margin-left: 10px;" onclick="deleteServer('` +
+	const deconsteButton =
+		`<button style="width=5%; margin-left: 10px;" onclick="deconsteServer('` +
 		serverName + `')"> - </button><br>`;
 
 	document.getElementById("serversList").innerHTML += "<div id=" + serverId +
 		">" + serverName +
-		deleteButton + "</div>";
+		deconsteButton + "</div>";
 }
 
 function drawGraphs(data) {
@@ -76,11 +74,11 @@ function drawGraphs(data) {
 	chart.container("container");
 	chart.title("Средний онлайн ежедневно");
 
-	let legend = anychart.standalones.legend();
-	let legendItems = [];
+	const legend = anychart.standalones.legend();
+	const legendItems = [];
 
 	for (let i = 0; i < data.length; i++) {
-		let item = {
+		const item = {
 			text: serversArray[i],
 			iconType: "square",
 			iconFill: { color: colors[i] },
@@ -97,24 +95,23 @@ function drawGraphs(data) {
 }
 
 async function loadData() {
-	let response = await fetch(
+	const response = await fetch(
 		"http://localhost:8080/comparedata?servers=" + serversArraySC,
 	);
 
 	if (response.ok) {
-		let responseBody = await response.json();
+		const responseBody = await response.json();
 
-		let data = [];
-
+		const data = [];
 		for (let i = 0; i < responseBody.length; i++) {
-			let serverData = responseBody[i];
-			let serverDataHandled = [];
+			const serverData = responseBody[i];
+			const serverDataHandled = [];
 
 			for (let j = 0; j < serverData.length; j++) {
-				let jsonEntry = serverData[j];
+				const jsonEntry = serverData[j];
 
-				let x = jsonEntry.day + "." + jsonEntry.month + "." + jsonEntry.year;
-				let obj = {
+				const x = jsonEntry.day + "." + jsonEntry.month + "." + jsonEntry.year;
+				const obj = {
 					x: x,
 					value: jsonEntry.online,
 				};

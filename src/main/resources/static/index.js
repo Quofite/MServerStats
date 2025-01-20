@@ -1,5 +1,5 @@
 document.getElementById("sendButton").addEventListener("click", () => {
-	var serverId = document.getElementById("serverId").value;
+	const serverId = document.getElementById("serverId").value;
 	window.location.href = "http://localhost:8080/data?id=" + serverId;
 });
 
@@ -20,7 +20,7 @@ function mapsStats() {
 }
 
 function updateCache() {
-	var result = confirm(
+	const result = confirm(
 		"Этот процесс может занять несколько минут. Хотите продолжить?",
 	);
 
