@@ -140,16 +140,8 @@ public class MainController {
     public ResponseEntity<?> graphCompareData(@RequestParam("servers") String servers) {
         String[] serversArray = servers.split(";");
 
-        List<Timestamp> startTimes = new ArrayList<>();
-        List<Timestamp> stopTimes = new ArrayList<>();
-
-        for(String server : serversArray) {
-            startTimes.add(dbService.serverEdgeTime(server, true));
-            stopTimes.add(dbService.serverEdgeTime(server, false));
-        }
-
-        Timestamp start = utils.findLatest(startTimes);
-        Timestamp stop = utils.findEarliest(stopTimes);
+        Timestamp start = dbService.recordingsEdgeTime(true);
+        Timestamp stop = dbService.recordingsEdgeTime(false);
 
         List<List<GraphDataModel>> data = new ArrayList<>();
         for(String server : serversArray) {
@@ -165,7 +157,11 @@ public class MainController {
 
         List<InstantDataModel> data = new ArrayList<>();
         for(String server : serversArray) {
-            data.add(dbService.getInstantData(server, date + " " + time));
+            InstantDataModel instantData = dbService.getInstantData(server, date + " " + time);
+
+            if(!instantData.getHostname().equals(Values.BAD_ID)) {
+                data.add(instantData);
+            }
         }
 
         model.addAttribute("data", data);

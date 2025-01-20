@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.FileReader;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -122,12 +123,16 @@ public class DBService {
         InstantDataModel data = new InstantDataModel();
 
         String sql = String.format("SELECT hostname, players, map FROM statistics WHERE server_id=%s AND to_char(time, 'DD.MM.YYYY HH24:MI')='%s';", serverId, timestamp);
-        Map<String, Object> row = template.queryForMap(sql);
+        try {
+            Map<String, Object> row = template.queryForMap(sql);
 
-        data.setOnline((Integer) row.get("players"));
-        data.setMap((String) row.get("map"));
-        data.setTimestamp(timestamp);
-        data.setHostname((String) row.get("hostname"));
+            data.setOnline((Integer) row.get("players"));
+            data.setMap((String) row.get("map"));
+            data.setTimestamp(timestamp);
+            data.setHostname((String) row.get("hostname"));
+        } catch (Exception e) {
+            data.setHostname(Values.BAD_ID);
+        }
 
         return data;
     }
@@ -230,6 +235,18 @@ public class DBService {
         }
 
         return goodIDs;
+    }
+
+    public Timestamp recordingsEdgeTime(boolean first) {
+        String sql;
+
+        if(first) {
+            sql = "SELECT time FROM statistics ORDER BY ID LIMIT 1;";
+        } else {
+            sql = "SELECT time FROM statistics ORDER BY ID DESC LIMIT 1;";
+        }
+
+        return (Timestamp) template.queryForMap(sql).get("time");
     }
 }
 
