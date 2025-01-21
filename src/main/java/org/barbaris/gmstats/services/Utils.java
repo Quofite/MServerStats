@@ -65,7 +65,7 @@ public class Utils {
         List<OnlinePerMap> sorted = new ArrayList<>();
 
         for(int i = 0; i < list.size() - 1; i++) {
-            OnlinePerMap max = new OnlinePerMap(Values.DEFAULT_CRITERIA, 0, 0);
+            OnlinePerMap max = new OnlinePerMap(Values.DEFAULT, 0, 0);
 
             for(OnlinePerMap el : list) {
                 if(el.online() > max.online()) {
@@ -84,7 +84,7 @@ public class Utils {
         List<OnlinePerTime> sorted = new ArrayList<>();
 
         for(int i = 0; i < list.size() - 1; i++) {
-            OnlinePerTime max = new OnlinePerTime(Values.DEFAULT_CRITERIA, 0);
+            OnlinePerTime max = new OnlinePerTime(Values.DEFAULT, 0);
 
             for(OnlinePerTime el : list) {
                 if(el.online() > max.online()) {

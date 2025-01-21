@@ -3,7 +3,7 @@ package org.barbaris.gmstats.models;
 public class Values {
     public static final String BAD_ID = "bad_id";
     public static final String DEFAULT_ADDRESS = "0.0.0.0:0000";
-    public static final String DEFAULT_CRITERIA = "default";
+    public static final String DEFAULT = "default";
     public static final String STEAM_WORKSHOP_LINK = "https://steamcommunity.com/workshop/browse/?appid=4000&searchtext=";
 
     public static final short MINUTES_A_RECORD = 5;

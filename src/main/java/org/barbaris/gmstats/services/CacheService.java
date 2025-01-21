@@ -9,23 +9,32 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/*
+ * <p>This service handles everything related to writing or reading cache.</p>
+ * <p>Cache reading method is separated into several methods so program do not have to read everything
+ * just to get one particular data piece.</p>
+ * <p>Probably later this class will be re-written in Go language in case it would increase performance.</p>
+ * */
 @Service
 public class CacheService {
 
-    @Autowired
-    private JdbcTemplate template;
-    @Autowired
-    private Utils utils;
-
+    private final Utils utils;
     private final DBService dbService;
     private final DataAnalysisService dataAnalysisService;
+    @Autowired
+    private JdbcTemplate template;
 
     @Autowired
-    public CacheService(DBService dbService, DataAnalysisService dataAnalysisService) {
+    public CacheService(DBService dbService, DataAnalysisService dataAnalysisService, Utils utils) {
         this.dbService = dbService;
         this.dataAnalysisService = dataAnalysisService;
+        this.utils = utils;
     }
 
+    /*
+     * <p>Deletes all data from <i>cache</i>, <i>mapstatscache</i> and <i>timestatscache</i>.</p>
+     * <p>Later there will be ability to delete data only from desired tables.</p>
+     * */
     public void clearCache() {
         String sql = "DELETE FROM cache";
         template.execute(sql);
@@ -35,13 +44,17 @@ public class CacheService {
         template.execute(sql);
     }
 
+    /*
+     * <p>Collects all needed data to write it into cache tables.</p>
+     * <p>Later there will be ability to write data only in desired tables.</p>
+     * */
     public void writeCache() {
         String sql;
         Gson gson = new Gson();
         clearCache();
 
         // servers stats cache
-        for(int serverId : dbService.getGoodIds()) {
+        for (int serverId : dbService.getGoodIds()) {
             String hostname = dbService.getHostnameByServerId(serverId);
 
             DataAnalysisModel peakNumbers = dataAnalysisService.peakOnlineStats(serverId);
@@ -82,7 +95,7 @@ public class CacheService {
 
             List<OnlinePerMap> onlinePerMaps = new ArrayList<>();
             List<String> maps = dataAnalysisService.getMaps(null, 0, null, null);
-            for(String map : maps) {
+            for (String map : maps) {
                 try {
                     sql = String.format("SELECT SUM(players) FROM statistics WHERE map='%s' AND server_id=%d;", map, serverId);
                     players = (Long) template.queryForMap(sql).get("sum");
@@ -90,7 +103,7 @@ public class CacheService {
                     sql = String.format("SELECT COUNT(*) FROM statistics WHERE map='%s' AND server_id=%d;", map, serverId);
                     count = (Long) template.queryForMap(sql).get("count");
 
-                    if(count >= Values.RECORDS_A_DAY) {
+                    if (count >= Values.RECORDS_A_DAY) {
                         onlinePerMaps.add(new OnlinePerMap(map, (players / count), Math.round(count)));
                     }
                 } catch (Exception ignored) {
@@ -98,7 +111,7 @@ public class CacheService {
                 }
             }
 
-            sql = String.format(Locale.US,"INSERT INTO cache(server_id, hostname, peak_online, average_online, max_daily_average, max_daily_average_day, po_in_mda, po_in_mda_map," +
+            sql = String.format(Locale.US, "INSERT INTO cache(server_id, hostname, peak_online, average_online, max_daily_average, max_daily_average_day, po_in_mda, po_in_mda_map," +
                             " admin_fav_map, admin_fav_map_records, admin_fav_map_online, players_fav_map, players_fav_map_records, players_fav_map_online, average_onlines_per_times, average_onlines_per_maps, weekly_data)" +
                             " VALUES (%d,'%s',%d,%f,%f,'%s',%d,'%s','%s',%d,%f,'%s',%d,%f,'%s','%s', '%s');",
                     serverId, hostname, maxPlayers, averageOnline, maxDailyAverage, maxDailyAverageDay, maxPlayersInMaxDailyAverageDay, maxPlayersInMaxDailyAverageDayMap, adminsFavouriteMap,
@@ -112,14 +125,14 @@ public class CacheService {
         List<String> maps = dataAnalysisService.getMaps(null, 0, null, null);
         long players;
         float count;
-        for(String map : maps) {
+        for (String map : maps) {
             sql = String.format("SELECT SUM(players) FROM statistics WHERE map='%s';", map);
             players = (Long) template.queryForMap(sql).get("sum");
 
             sql = String.format("SELECT COUNT(*) FROM statistics WHERE map='%s';", map);
             count = (Long) template.queryForMap(sql).get("count");
 
-            if(count >= Values.RECORDS_A_DAY) {
+            if (count >= Values.RECORDS_A_DAY) {
                 sql = String.format(Locale.US, "INSERT INTO mapstatscache(map, average_online, records) VALUES ('%s', %f, %d);", map, (players / count), Math.round(count));
                 template.execute(sql);
             }
@@ -140,6 +153,14 @@ public class CacheService {
 
     }
 
+    /*
+     * <p>Reads all data from <i>cache</i> table - all server common data.</p>
+     *
+     * @param serverId Server's ID
+     * @return Data model class with peak online, average online, daily max average online, this daily max average
+     *  online day, peak online in this day, map during this peak online record, most common map in server,
+     * most common map in server average online, map with the biggest average online and its average online data.
+     * */
     public DataAnalysisModel readCommonDataCache(int serverId) {
         DataAnalysisModel data = new DataAnalysisModel();
 
@@ -160,46 +181,77 @@ public class CacheService {
         return data;
     }
 
+    /*
+     * <p>Reads data from <i>mapstatscache</i> table.</p>
+     * @return List<OnlinePerMap> cachedData - records list, where every record contains name, average online and
+     * records amount for every map ever recorded in database.
+     * */
     public List<OnlinePerMap> readMapCache() {
         List<OnlinePerMap> cachedData = new ArrayList<>();
         String sql = "SELECT * FROM mapstatscache;";
         List<Map<String, Object>> rows = template.queryForList(sql);
 
-        for(Map<String, Object> row : rows) {
+        for (Map<String, Object> row : rows) {
             cachedData.add(new OnlinePerMap((String) row.get("map"), (Float) row.get("average_online"), (Integer) row.get("records")));
         }
 
         return cachedData;
     }
 
+    /*
+     * <p>Reads data from <i>timestatscache</i> table.</p>
+     * @return List<OnlinePerTime> - records list, where every record contains name and average online
+     * for every timestamp gapped by five minutes (00:00, 00:05, 00:10 etc.).
+     * */
     public List<OnlinePerTime> readTimeCache() {
         List<OnlinePerTime> cachedData = new ArrayList<>();
         String sql = "SELECT * FROM timestatscache;";
         List<Map<String, Object>> rows = template.queryForList(sql);
 
-        for(Map<String, Object> row : rows) {
+        for (Map<String, Object> row : rows) {
             cachedData.add(new OnlinePerTime((String) row.get("time"), (Float) row.get("average_online")));
         }
 
         return cachedData;
     }
 
+    /*
+     * <p>Reads average online per times data from <i>cache</i> table.</p>
+     * @param serverId Server's ID
+     * @return List<OnlinePerTime> - records list, where every record contains name and average online
+     * for every timestamp gapped by five minutes (00:00, 00:05, 00:10 etc.) on particular server.
+     * */
     public List<OnlinePerTime> readAverageOnlinesPerTimesCache(String serverId) {
         String sql = "SELECT average_onlines_per_times FROM cache WHERE server_id=" + serverId + ";";
         String json = (template.queryForMap(sql).get("average_onlines_per_times")).toString();
-        return new Gson().fromJson(json, new TypeToken<List<OnlinePerTime>>(){}.getType());
+        return new Gson().fromJson(json, new TypeToken<List<OnlinePerTime>>() {
+        }.getType());
     }
 
+    /*
+     * <p>Reads average online per maps data from <i>cache</i> table.</p>
+     * @param serverId Server's ID
+     * @return List<OnlinePerMap> - records list, where every record contains name, average online and
+     * records amount for every map ever recorded in database on particular server.
+     * */
     public List<OnlinePerMap> readAverageOnlinesPerMapsCache(String serverId) {
         String sql = "SELECT average_onlines_per_maps FROM cache WHERE server_id=" + serverId + ";";
         String json = (template.queryForMap(sql).get("average_onlines_per_maps")).toString();
-        return new Gson().fromJson(json, new TypeToken<List<OnlinePerMap>>(){}.getType());
+        return new Gson().fromJson(json, new TypeToken<List<OnlinePerMap>>() {
+        }.getType());
     }
 
+    /*
+     * <p>Reads weekly data from <i>cache</i> table.</p>
+     * @param serverId Server's ID
+     * @return List<WeeklyDataModel> - data model list with average online, records amount and peak online
+     * data from every day in the week for a particular server.
+     * */
     public List<WeeklyDataModel> readWeeklyDataCache(int serverId) {
         String sql = "SELECT weekly_data FROM cache WHERE server_id=" + serverId + ";";
         String json = (template.queryForMap(sql).get("weekly_data")).toString();
-        return new Gson().fromJson(json, new TypeToken<List<WeeklyDataModel>>(){}.getType());
+        return new Gson().fromJson(json, new TypeToken<List<WeeklyDataModel>>() {
+        }.getType());
     }
 }
 

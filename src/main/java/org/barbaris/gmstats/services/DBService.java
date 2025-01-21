@@ -1,7 +1,5 @@
 package org.barbaris.gmstats.services;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.barbaris.gmstats.models.GraphDataModel;
 import org.barbaris.gmstats.models.InstantDataModel;
 import org.barbaris.gmstats.models.ServerModel;
@@ -11,19 +9,22 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.FileReader;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class DBService {
-
-    private static final Logger log = LogManager.getLogger(DBService.class);
+    private final Utils utils;
     @Autowired
     private JdbcTemplate template;
+
     @Autowired
-    private Utils utils;
+    public DBService(Utils utils) {
+        this.utils = utils;
+    }
 
     public String getHostnameByServerId(int serverId) {
         String sql = "SELECT hostname FROM goodservers WHERE mid=" + serverId + ";";
@@ -37,7 +38,6 @@ public class DBService {
 
     public String getAddressById(int serverId) {
         String sql = "SELECT (ip, port) FROM goodservers WHERE mid=" + serverId + ";";
-
         try {
             Map<String, Object> address = template.queryForMap(sql);
             return address.get("row").toString().replace("(", "").replace(")", "").replace(",", ":");
@@ -46,7 +46,7 @@ public class DBService {
         }
     }
 
-    // returns GraphDataModel objects list filled with record time, online players amount and current map at given day
+    // @return GraphDataModel objects list filled with record time, online players amount and current map at given day
     public List<GraphDataModel> getDailyData(String serverId, String dateString) {
 
         // this two lines creates data extraction time bounds - from `date` to `nextDate`
@@ -58,14 +58,14 @@ public class DBService {
         List<Map<String, Object>> rows = template.queryForList(sql);
 
         List<GraphDataModel> stats = new ArrayList<>();
-        for(Map<String, Object> row : rows) {
+        for (Map<String, Object> row : rows) {
             GraphDataModel stat = new GraphDataModel();
             stat.setOnline(Float.parseFloat(String.valueOf(row.get("players"))));
             stat.setMap((String) row.get("map"));
 
-            LocalDateTime timeLDT = ( (Timestamp) row.get("time") ).toLocalDateTime();
-            stat.setHour(timeLDT.getHour() < 10 ?  "0" + timeLDT.getHour() : String.valueOf(timeLDT.getHour()));
-            stat.setMinute(timeLDT.getMinute() < 10 ?  "0" + timeLDT.getMinute() : String.valueOf(timeLDT.getMinute()));
+            LocalDateTime timeLDT = ((Timestamp) row.get("time")).toLocalDateTime();
+            stat.setHour(timeLDT.getHour() < 10 ? "0" + timeLDT.getHour() : String.valueOf(timeLDT.getHour()));
+            stat.setMinute(timeLDT.getMinute() < 10 ? "0" + timeLDT.getMinute() : String.valueOf(timeLDT.getMinute()));
             stats.add(stat);
         }
 
@@ -94,7 +94,7 @@ public class DBService {
     public Timestamp serverEdgeTime(String serverId, boolean first) {
         String sql = String.format("SELECT time FROM statistics WHERE server_id=%s ORDER BY id", serverId);
 
-        if(first) {
+        if (first) {
             sql += " LIMIT 1;";
         } else {
             sql += " DESC LIMIT 1";
@@ -109,7 +109,7 @@ public class DBService {
         String sql = "SELECT * FROM goodservers;";
         List<Map<String, Object>> rows = template.queryForList(sql);
 
-        for(Map<String, Object> row : rows) {
+        for (Map<String, Object> row : rows) {
             ServerModel server = new ServerModel();
             server.setHostname((String) row.get("hostname"));
             server.setMid((Integer) row.get("mid"));
@@ -119,6 +119,7 @@ public class DBService {
         return servers;
     }
 
+    // @return server data such as online and map in particular timestamp
     public InstantDataModel getInstantData(String serverId, String timestamp) {
         InstantDataModel data = new InstantDataModel();
 
@@ -137,12 +138,11 @@ public class DBService {
         return data;
     }
 
-    // --------------------- DATABASE MANIPULATING SCRIPTS
-
+    // --------------------- DATABASE MANIPULATING SCRIPTS (these scripts are to be re-written in Go and moved to small rarely-used microservice)
 
     public void initializeDatabase() {
 
-        try(FileReader fr = new FileReader("/home/gleb/Coding/gm/createGoodServersTable.sql")) {
+        try (FileReader fr = new FileReader("/home/gleb/Coding/gm/createGoodServersTable.sql")) {
             StringBuilder sql = new StringBuilder();
 
             int c;
@@ -152,7 +152,7 @@ public class DBService {
 
             template.execute(sql.toString());
         } catch (Exception ex) {
-            log.error(String.valueOf(ex.getCause()));
+            System.out.println(ex.getMessage());
         }
 
     }
@@ -166,14 +166,14 @@ public class DBService {
         List<ServerModel> nonEmptyServers = new ArrayList<>();
 
 
-        for(Map<String, Object> data : dbdata) {
+        for (Map<String, Object> data : dbdata) {
 
             ServerModel server = new ServerModel();
             server.setHostname((String) data.get("hostname"));
             server.setMid((Integer) data.get("mid"));
 
-            if(server.getHostname().contains(" TEST ")) continue;
-            if(utils.isBadId(server.getMid())) continue;
+            if (server.getHostname().contains(" TEST ")) continue;
+            if (utils.isBadId(server.getMid())) continue;
 
             server.setId((Integer) data.get("id"));
             server.setMap((String) data.get("map"));
@@ -187,9 +187,9 @@ public class DBService {
             sql = String.format("SELECT * FROM statistics WHERE server_id=%d;", server.getMid());
             List<Map<String, Object>> records = template.queryForList(sql);
 
-            if(!records.isEmpty()) {
-                for(Map<String, Object> record : records) {
-                    if(record.get("players_json") != null) {
+            if (!records.isEmpty()) {
+                for (Map<String, Object> record : records) {
+                    if (record.get("players_json") != null) {
                         nonEmptyServers.add(server);
                         break;
                     }
@@ -197,7 +197,7 @@ public class DBService {
             }
         }
 
-        for(ServerModel s : nonEmptyServers) {
+        for (ServerModel s : nonEmptyServers) {
             sql = String.format("INSERT INTO goodservers (id, mid, hostname, map, ip, port, owner) VALUES (%d, %d, '%s', '%s', '%s', %d, '%s');",
                     s.getId(), s.getMid(), s.getHostname(), s.getMap(), s.getIp(), s.getPort(), s.getOwner());
             template.execute(sql);
@@ -210,10 +210,10 @@ public class DBService {
 
         String sql = "select distinct on(server_id) server_id from statistics;";
         List<Map<String, Object>> rows = template.queryForList(sql);
-        for(Map<String, Object> row : rows) {
+        for (Map<String, Object> row : rows) {
             int serverId = (Integer) row.get("server_id");
 
-            if(!ids.contains(serverId)) {
+            if (!ids.contains(serverId)) {
                 sql = String.format("DELETE FROM statistics WHERE server_id=%d;", serverId);
                 template.execute(sql);
             }
@@ -224,13 +224,14 @@ public class DBService {
     }
 
     // --------------------- HELPING METHODS
-    // this method returns good servers ids list
+
+    // @return good servers ids list
     public ArrayList<Integer> getGoodIds() {
         ArrayList<Integer> goodIDs = new ArrayList<>();
         String sql = "SELECT mid FROM goodservers;";
         List<Map<String, Object>> goodServersIDs = template.queryForList(sql);
 
-        for(Map<String, Object> serverID : goodServersIDs) {
+        for (Map<String, Object> serverID : goodServersIDs) {
             goodIDs.add((Integer) serverID.get("mid"));
         }
 
@@ -240,7 +241,7 @@ public class DBService {
     public Timestamp recordingsEdgeTime(boolean first) {
         String sql;
 
-        if(first) {
+        if (first) {
             sql = "SELECT time FROM statistics ORDER BY ID LIMIT 1;";
         } else {
             sql = "SELECT time FROM statistics ORDER BY ID DESC LIMIT 1;";
