@@ -1,6 +1,8 @@
 package org.barbaris.gmstats.models;
 
+import lombok.Getter;
 
+@Getter
 public class InstantDataModel {
     private int online;
     private String timestamp;
@@ -21,10 +23,6 @@ public class InstantDataModel {
 
     public void setOnline(int online) {
         this.online = online;
-    }
-
-    public String getTimestamp() {
-        return timestamp;
     }
 
     public void setTimestamp(String timestamp) {

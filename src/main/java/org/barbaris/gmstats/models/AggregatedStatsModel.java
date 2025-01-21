@@ -1,6 +1,5 @@
 package org.barbaris.gmstats.models;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class AggregatedStatsModel {
@@ -22,26 +21,5 @@ public class AggregatedStatsModel {
     public void setOnlinesPerTimes(List<OnlinePerTime> onlinesPerTimes) {
         this.onlinesPerTimes = onlinesPerTimes;
     }
-
-    public List<OnlinePerMap> getOnlinesPerMaps(int amount) {
-        List<OnlinePerMap> maps = new ArrayList<>();
-
-        for(int i = 0; i < amount; i++) {
-            maps.add(onlinesPerMaps.get(i));
-        }
-
-        return maps;
-    }
-
-    public List<OnlinePerTime> getOnlinesPerTimes(int amount) {
-        List<OnlinePerTime> times = new ArrayList<>();
-
-        for(int i = 0; i < amount; i++) {
-            times.add(onlinesPerTimes.get(i));
-        }
-
-        return times;
-    }
-
 
 }

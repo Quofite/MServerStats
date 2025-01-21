@@ -1,7 +1,10 @@
 package org.barbaris.gmstats.models;
 
+import lombok.Getter;
+
 import java.util.List;
 
+@Getter
 public class DataAnalysisModel {
     private float averagePlayers;
     private int maxPlayers;
@@ -82,10 +85,6 @@ public class DataAnalysisModel {
 
     public void setAdminFavouriteMap(String adminFavouriteMap) {
         this.adminFavouriteMap = adminFavouriteMap;
-    }
-
-    public List<StatsModel> getMaxPlayersRecords() {
-        return maxPlayersRecords;
     }
 
     public void setMaxPlayersRecords(List<StatsModel> maxPlayersRecords) {

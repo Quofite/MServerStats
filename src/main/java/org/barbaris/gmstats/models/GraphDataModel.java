@@ -1,5 +1,8 @@
 package org.barbaris.gmstats.models;
 
+import lombok.Getter;
+
+@Getter
 public class GraphDataModel {
 
     private String day;
@@ -11,24 +14,12 @@ public class GraphDataModel {
     private float online;
     private float compareOnline;
 
-    public String getDay() {
-        return day;
-    }
-
     public void setDay(String day) {
         this.day = day;
     }
 
-    public String getMonth() {
-        return month;
-    }
-
     public void setMonth(String month) {
         this.month = month;
-    }
-
-    public String getYear() {
-        return year;
     }
 
     public void setYear(String year) {
@@ -43,24 +34,12 @@ public class GraphDataModel {
         this.online = online;
     }
 
-    public float getCompareOnline() {
-        return compareOnline;
-    }
-
     public void setCompareOnline(float compareOnline) {
         this.compareOnline = compareOnline;
     }
 
-    public String getHour() {
-        return hour;
-    }
-
     public void setHour(String hour) {
         this.hour = hour;
-    }
-
-    public String getMinute() {
-        return minute;
     }
 
     public void setMinute(String minute) {

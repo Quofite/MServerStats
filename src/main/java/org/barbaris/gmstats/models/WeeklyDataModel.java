@@ -1,37 +1,26 @@
 package org.barbaris.gmstats.models;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class WeeklyDataModel {
     private String day;
     private float averageOnline;
     private int records;
     private int maxOnline;
 
-    public String getDay() {
-        return day;
-    }
-
     public void setDay(String day) {
         this.day = day;
-    }
-
-    public float getAverageOnline() {
-        return averageOnline;
     }
 
     public void setAverageOnline(float averageOnline) {
         this.averageOnline = averageOnline;
     }
 
-    public int getRecords() {
-        return records;
-    }
-
     public void setRecords(int records) {
         this.records = records;
-    }
-
-    public int getMaxOnline() {
-        return maxOnline;
     }
 
     public void setMaxOnline(int maxOnline) {

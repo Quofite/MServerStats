@@ -3,6 +3,7 @@ package org.barbaris.gmstats.services;
 import com.google.gson.Gson;
 import org.barbaris.gmstats.models.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,7 @@ public class DataAnalysisService {
     private JdbcTemplate template;
 
     @Autowired
-    public DataAnalysisService(Utils utils, CacheService cache, DBService dbService) {
+    public DataAnalysisService(Utils utils, @Lazy CacheService cache, DBService dbService) {
         this.dbService = dbService;
         this.cache = cache;
         this.utils = utils;
