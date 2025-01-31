@@ -3,6 +3,10 @@ package org.barbaris.gmstats.services;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.barbaris.gmstats.models.*;
+import org.barbaris.gmstats.services.caching.MapStatsCaching;
+import org.barbaris.gmstats.services.caching.OnlinePerMapsCaching;
+import org.barbaris.gmstats.services.caching.OnlinePerTimesCaching;
+import org.barbaris.gmstats.services.caching.TimeStatsCaching;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -18,17 +22,15 @@ import java.util.*;
 @Service
 public class CacheService {
 
-    private final Utils utils;
     private final DBService dbService;
     private final DataAnalysisService dataAnalysisService;
     @Autowired
     private JdbcTemplate template;
 
     @Autowired
-    public CacheService(DBService dbService, DataAnalysisService dataAnalysisService, Utils utils) {
+    public CacheService(DBService dbService, DataAnalysisService dataAnalysisService) {
         this.dbService = dbService;
         this.dataAnalysisService = dataAnalysisService;
-        this.utils = utils;
     }
 
     /*
@@ -48,13 +50,19 @@ public class CacheService {
      * <p>Collects all needed data to write it into cache tables.</p>
      * <p>Later there will be ability to write data only in desired tables.</p>
      * */
-    public void writeCache() {
+    public synchronized void writeCache() throws InterruptedException {
         String sql;
-        Gson gson = new Gson();
         clearCache();
+        // calling thread-separated caching methods at the beginning
+        new MapStatsCaching(dataAnalysisService, template).start();
+        new TimeStatsCaching(template).start();
 
         // servers stats cache
         for (int serverId : dbService.getGoodIds()) {
+            // calling thread-separated caching methods at the beginning
+            new OnlinePerTimesCaching(template, serverId).start();
+            new OnlinePerMapsCaching(dataAnalysisService, template, serverId).start();
+
             String hostname = dbService.getHostnameByServerId(serverId);
 
             DataAnalysisModel peakNumbers = dataAnalysisService.peakOnlineStats(serverId);
@@ -75,82 +83,16 @@ public class CacheService {
             int playersFavMapRecords = mapsNumbers.getMostPopularMapStats().getRecords();
             float playersFavMapAvgPlayers = mapsNumbers.getMostPopularMapStats().getAveragePlayers();
 
-            List<OnlinePerTime> onlinePerTimes = new ArrayList<>();
-            long players;
-            float count;
-            List<String> times = utils.generateTimes();
-            for (String time : times) {
-                try {
-                    sql = String.format("SELECT SUM(players) FROM statistics WHERE to_char(time, 'HH24:MI')='%s' AND server_id=%d;", time, serverId);
-                    players = (Long) template.queryForMap(sql).get("sum");
-
-                    sql = String.format("SELECT COUNT(*) FROM statistics WHERE to_char(time, 'HH24:MI')='%s' AND server_id=%d;", time, serverId);
-                    count = (Long) template.queryForMap(sql).get("count");
-
-                    onlinePerTimes.add(new OnlinePerTime(time, (players / count)));
-                } catch (NullPointerException ex) {
-                    onlinePerTimes.add(new OnlinePerTime(time, 0));
-                }
-            }
-
-            List<OnlinePerMap> onlinePerMaps = new ArrayList<>();
-            List<String> maps = dataAnalysisService.getMaps(null, 0, null, null);
-            for (String map : maps) {
-                try {
-                    sql = String.format("SELECT SUM(players) FROM statistics WHERE map='%s' AND server_id=%d;", map, serverId);
-                    players = (Long) template.queryForMap(sql).get("sum");
-
-                    sql = String.format("SELECT COUNT(*) FROM statistics WHERE map='%s' AND server_id=%d;", map, serverId);
-                    count = (Long) template.queryForMap(sql).get("count");
-
-                    if (count >= Values.RECORDS_A_DAY) {
-                        onlinePerMaps.add(new OnlinePerMap(map, (players / count), Math.round(count)));
-                    }
-                } catch (Exception ignored) {
-
-                }
-            }
-
             sql = String.format(Locale.US, "INSERT INTO cache(server_id, hostname, peak_online, average_online, max_daily_average, max_daily_average_day, po_in_mda, po_in_mda_map," +
-                            " admin_fav_map, admin_fav_map_records, admin_fav_map_online, players_fav_map, players_fav_map_records, players_fav_map_online, average_onlines_per_times, average_onlines_per_maps, weekly_data)" +
-                            " VALUES (%d,'%s',%d,%f,%f,'%s',%d,'%s','%s',%d,%f,'%s',%d,%f,'%s','%s', '%s');",
+                            " admin_fav_map, admin_fav_map_records, admin_fav_map_online, players_fav_map, players_fav_map_records, players_fav_map_online, weekly_data)" +
+                            " VALUES (%d,'%s',%d,%f,%f,'%s',%d,'%s','%s',%d,%f,'%s',%d,%f,'%s');",
                     serverId, hostname, maxPlayers, averageOnline, maxDailyAverage, maxDailyAverageDay, maxPlayersInMaxDailyAverageDay, maxPlayersInMaxDailyAverageDayMap, adminsFavouriteMap,
-                    adminsFavMapRecords, adminsFavMapAvgPlayers, playersFavouriteMap, playersFavMapRecords, playersFavMapAvgPlayers, gson.toJson(onlinePerTimes), gson.toJson(onlinePerMaps), dataAnalysisService.getWeeklyData(serverId));
+                    adminsFavMapRecords, adminsFavMapAvgPlayers, playersFavouriteMap, playersFavMapRecords, playersFavMapAvgPlayers, dataAnalysisService.getWeeklyData(serverId));
 
             template.execute(sql);
+            wait();
+            wait();
         }
-
-        // --- maps stats cache
-
-        List<String> maps = dataAnalysisService.getMaps(null, 0, null, null);
-        long players;
-        float count;
-        for (String map : maps) {
-            sql = String.format("SELECT SUM(players) FROM statistics WHERE map='%s';", map);
-            players = (Long) template.queryForMap(sql).get("sum");
-
-            sql = String.format("SELECT COUNT(*) FROM statistics WHERE map='%s';", map);
-            count = (Long) template.queryForMap(sql).get("count");
-
-            if (count >= Values.RECORDS_A_DAY) {
-                sql = String.format(Locale.US, "INSERT INTO mapstatscache(map, average_online, records) VALUES ('%s', %f, %d);", map, (players / count), Math.round(count));
-                template.execute(sql);
-            }
-        }
-
-        List<String> times = utils.generateTimes();
-        for (String time : times) {
-            sql = String.format("SELECT SUM(players) FROM statistics WHERE to_char(time, 'HH24:MI')='%s';", time);
-            players = (Long) template.queryForMap(sql).get("sum");
-
-            sql = String.format("SELECT COUNT(*) FROM statistics WHERE to_char(time, 'HH24:MI')='%s';", time);
-            count = (Long) template.queryForMap(sql).get("count");
-
-            sql = String.format(Locale.US, "INSERT INTO timestatscache(time, average_online) VALUES ('%s', %f);", time, (players / count));
-            template.execute(sql);
-        }
-
-
     }
 
     /*

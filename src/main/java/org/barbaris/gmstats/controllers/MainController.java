@@ -116,7 +116,13 @@ public class MainController {
 
     @GetMapping("/update")
     public String writeCache() {
-        cache.writeCache();
+        try {
+            cache.writeCache();
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+            return "bad_id";
+        }
+
         return "updated";
     }
 
