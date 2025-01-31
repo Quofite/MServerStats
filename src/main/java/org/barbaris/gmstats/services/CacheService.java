@@ -50,7 +50,7 @@ public class CacheService {
      * <p>Collects all needed data to write it into cache tables.</p>
      * <p>Later there will be ability to write data only in desired tables.</p>
      * */
-    public synchronized void writeCache() throws InterruptedException {
+    public void writeCache() {
         String sql;
         clearCache();
         // calling thread-separated caching methods at the beginning
@@ -59,10 +59,6 @@ public class CacheService {
 
         // servers stats cache
         for (int serverId : dbService.getGoodIds()) {
-            // calling thread-separated caching methods at the beginning
-            new OnlinePerTimesCaching(template, serverId).start();
-            new OnlinePerMapsCaching(dataAnalysisService, template, serverId).start();
-
             String hostname = dbService.getHostnameByServerId(serverId);
 
             DataAnalysisModel peakNumbers = dataAnalysisService.peakOnlineStats(serverId);
@@ -90,9 +86,11 @@ public class CacheService {
                     adminsFavMapRecords, adminsFavMapAvgPlayers, playersFavouriteMap, playersFavMapRecords, playersFavMapAvgPlayers, dataAnalysisService.getWeeklyData(serverId));
 
             template.execute(sql);
-            wait();
-            wait();
         }
+
+        // and that ones are called at the bottom because they append to the rows created earlier
+        new OnlinePerTimesCaching(template, dbService).start(); // while this one should probably go to top because it runs very slow
+        new OnlinePerMapsCaching(dataAnalysisService, dbService, template).start();
     }
 
     /*
