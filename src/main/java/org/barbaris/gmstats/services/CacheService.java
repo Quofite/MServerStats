@@ -59,6 +59,9 @@ public class CacheService {
 
         // servers stats cache
         for (int serverId : dbService.getGoodIds()) {
+            new OnlinePerTimesCaching(template, serverId).start();
+            new OnlinePerMapsCaching(dataAnalysisService, template, serverId).start();
+
             String hostname = dbService.getHostnameByServerId(serverId);
 
             DataAnalysisModel peakNumbers = dataAnalysisService.peakOnlineStats(serverId);
@@ -88,9 +91,8 @@ public class CacheService {
             template.execute(sql);
         }
 
-        // and that ones are called at the bottom because they append to the rows created earlier
-        new OnlinePerTimesCaching(template, dbService).start(); // while this one should probably go to top because it runs very slow
-        new OnlinePerMapsCaching(dataAnalysisService, dbService, template).start();
+
+
     }
 
     /*
@@ -145,7 +147,7 @@ public class CacheService {
      * */
     public List<OnlinePerTime> readTimeCache() {
         List<OnlinePerTime> cachedData = new ArrayList<>();
-        String sql = "SELECT * FROM timestatscache;";
+        String sql = "SELECT * FROM timestatscache ORDER BY time;";
         List<Map<String, Object>> rows = template.queryForList(sql);
 
         for (Map<String, Object> row : rows) {

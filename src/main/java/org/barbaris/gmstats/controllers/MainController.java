@@ -6,6 +6,7 @@ import org.barbaris.gmstats.services.DBService;
 import org.barbaris.gmstats.services.DataAnalysisService;
 import org.barbaris.gmstats.services.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -225,6 +226,19 @@ public class MainController {
         }
 
         return new ResponseEntity<>(mapsStats, HttpStatus.OK);
+    }
+
+    @GetMapping("/init")
+    public ResponseEntity<?> init(@RequestParam("pass") String pass) {
+        // obviously this should be transferred into separate file, but this will work for tests
+        if(!pass.equals("YourBunnyWrote")) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        dbService.initializeDatabase();
+        dbService.regroupServers();
+        dbService.deleteUnnecessaryStatistics();
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
 

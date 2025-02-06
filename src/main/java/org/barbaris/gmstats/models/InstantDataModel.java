@@ -1,8 +1,5 @@
 package org.barbaris.gmstats.models;
 
-import lombok.Getter;
-
-@Getter
 public class InstantDataModel {
     private int online;
     private String timestamp;
@@ -35,5 +32,9 @@ public class InstantDataModel {
 
     public void setMap(String map) {
         this.map = map;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
     }
 }

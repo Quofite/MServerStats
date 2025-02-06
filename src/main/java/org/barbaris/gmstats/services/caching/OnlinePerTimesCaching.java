@@ -10,16 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OnlinePerTimesCaching extends Thread {
-
-    private final DBService dbService;
     private final JdbcTemplate template;
+    private int id;
 
     Utils utils = new Utils();
     Gson gson = new Gson();
 
-    public OnlinePerTimesCaching(JdbcTemplate template, DBService dbService) {
+    public OnlinePerTimesCaching(JdbcTemplate template, int id) {
         super();
-        this.dbService = dbService;
+        this.id = id;
         this.template = template;
     }
 
@@ -35,25 +34,26 @@ public class OnlinePerTimesCaching extends Thread {
         float count;
         List<String> times = utils.generateTimes();
 
-        for (int id : dbService.getGoodIds()) {
-            List<OnlinePerTime> onlinePerTimes = new ArrayList<>();
-            for (String time : times) {
-                try {
-                    sql = String.format("SELECT SUM(players) FROM statistics WHERE to_char(time, 'HH24:MI')='%s' AND server_id=%d;", time, id);
-                    players = (Long) template.queryForMap(sql).get("sum");
+        List<OnlinePerTime> onlinePerTimes = new ArrayList<>();
+        for (String time : times) {
+            try {
+                sql = String.format("SELECT SUM(online) FROM statistics WHERE to_char(time, 'HH24:MI')='%s' AND server_id=%d;", time, id);
+                players = (Long) template.queryForMap(sql).get("sum");
 
-                    sql = String.format("SELECT COUNT(*) FROM statistics WHERE to_char(time, 'HH24:MI')='%s' AND server_id=%d;", time, id);
-                    count = (Long) template.queryForMap(sql).get("count");
+                sql = String.format("SELECT COUNT(*) FROM statistics WHERE to_char(time, 'HH24:MI')='%s' AND server_id=%d;", time, id);
+                count = (Long) template.queryForMap(sql).get("count");
 
-                    onlinePerTimes.add(new OnlinePerTime(time, (players / count)));
-                } catch (NullPointerException ex) {
-                    onlinePerTimes.add(new OnlinePerTime(time, 0));
-                }
+                onlinePerTimes.add(new OnlinePerTime(time, (players / count)));
+                System.out.printf("%d\t%s\n", id, time);
+            } catch (NullPointerException ex) {
+                onlinePerTimes.add(new OnlinePerTime(time, 0));
             }
-
-            sql = String.format("UPDATE cache SET average_onlines_per_times='%s' WHERE server_id=%d;", gson.toJson(onlinePerTimes), id);
-            template.execute(sql);
         }
+
+        sql = String.format("UPDATE cache SET average_onlines_per_times='%s' WHERE server_id=%d;", gson.toJson(onlinePerTimes), id);
+        template.execute(sql);
+        System.out.printf("%d ENDED\n", id);
+
 
         System.out.println("Times caching done!");
     }

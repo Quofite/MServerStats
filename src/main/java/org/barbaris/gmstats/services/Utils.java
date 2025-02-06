@@ -12,6 +12,7 @@ import java.util.List;
 @Component
 public class Utils {
 
+    /*
     // this method checks if server is dev or test one
     // TODO: rewrite it so this method would automatically seek for test and dev servers by certain parameters
     public boolean isBadId(int id) {
@@ -25,6 +26,8 @@ public class Utils {
 
         return false;
     }
+    */
+
 
     public Timestamp stringToTimestamp(String date, int plusDays) {
         String[] dateParts =  date.split("\\.");

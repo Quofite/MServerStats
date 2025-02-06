@@ -57,11 +57,11 @@ public class DataAnalysisService {
         Timestamp maxDailyAverageDay = currentDay;
 
         for (Map<String, Object> row : rows) {
-            sumPlayers += (int) row.get("players");
+            sumPlayers += (int) row.get("online");
 
             Timestamp recordTime = (Timestamp) row.get("time");
             if ((recordTime.toLocalDateTime().truncatedTo(ChronoUnit.DAYS).equals(currentDay.toLocalDateTime().truncatedTo(ChronoUnit.DAYS)))) {
-                currentDayPlayers += (int) row.get("players");
+                currentDayPlayers += (int) row.get("online");
             } else {
                 float dailyAverage = currentDayPlayers / Values.RECORDS_A_DAY;
 
@@ -70,12 +70,12 @@ public class DataAnalysisService {
                     maxDailyAverageDay = Timestamp.valueOf(recordTime.toLocalDateTime().minusDays(1));
                 }
 
-                currentDayPlayers = (int) row.get("players");
+                currentDayPlayers = (int) row.get("online");
                 currentDay = recordTime;
             }
         }
 
-        sql = String.format("SELECT MAX(players) FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s';",
+        sql = String.format("SELECT MAX(online) FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s';",
                 serverId,
                 maxDailyAverageDay,
                 Timestamp.valueOf(maxDailyAverageDay.toLocalDateTime().plusDays(1)));
@@ -148,12 +148,12 @@ public class DataAnalysisService {
 
         for (String mapName : mapNames) {
             if (mapPlays.get(mapNames.indexOf(mapName)) > 20) {
-                sql = String.format("SELECT players FROM statistics WHERE server_id=%d AND map='%s';", serverId, mapName);
+                sql = String.format("SELECT online FROM statistics WHERE server_id=%d AND map='%s';", serverId, mapName);
                 rows = template.queryForList(sql);
 
                 float playersMultiplier = 0f;
                 for (Map<String, Object> row : rows) {
-                    playersMultiplier += (int) row.get("players");
+                    playersMultiplier += (int) row.get("online");
                 }
 
                 playersMultiplier /= mapPlays.get(mapNames.indexOf(mapName));
@@ -165,12 +165,12 @@ public class DataAnalysisService {
         }
 
         // counting average players number in admins fav map
-        sql = String.format("SELECT players FROM statistics WHERE server_id=%d AND map='%s';", serverId, mapNames.get(utils.maxNumberIndex(mapPlays)));
+        sql = String.format("SELECT online FROM statistics WHERE server_id=%d AND map='%s';", serverId, mapNames.get(utils.maxNumberIndex(mapPlays)));
         rows = template.queryForList(sql);
 
         int playersSum = 0;
         for (Map<String, Object> row : rows) {
-            playersSum += (int) row.get("players");
+            playersSum += (int) row.get("online");
         }
 
         // setting up DTO
@@ -193,10 +193,10 @@ public class DataAnalysisService {
      * @return peak online data like max players online and timestamps w/ map
      *  */
     public DataAnalysisModel peakOnlineStats(int serverId) {
-        String sql = String.format("SELECT MAX(players) FROM statistics WHERE server_id=%d;", serverId);
+        String sql = String.format("SELECT MAX(online) FROM statistics WHERE server_id=%d;", serverId);
         int maxPlayers = (int) template.queryForMap(sql).get("max");
 
-        sql = String.format("SELECT map, time FROM statistics WHERE server_id=%d AND players=%d;", serverId, maxPlayers);
+        sql = String.format("SELECT map, time FROM statistics WHERE server_id=%d AND online=%d;", serverId, maxPlayers);
         List<Map<String, Object>> rows = template.queryForList(sql);
         List<StatsModel> records = new ArrayList<>();
 
@@ -249,7 +249,7 @@ public class DataAnalysisService {
             LocalDateTime time = ((Timestamp) row.get("time")).toLocalDateTime().truncatedTo(ChronoUnit.DAYS);
 
             if (day.equals(time)) {
-                onlineSum += (int) row.get("players");
+                onlineSum += (int) row.get("online");
             } else {
                 GraphDataModel graphData = new GraphDataModel();
                 graphData.setYear(String.valueOf(((day.getYear()))));
@@ -261,7 +261,7 @@ public class DataAnalysisService {
                 data.add(graphData);
 
                 day = time;
-                onlineSum = (int) row.get("players");
+                onlineSum = (int) row.get("online");
             }
         }
 
@@ -296,7 +296,7 @@ public class DataAnalysisService {
         if (serverId == -1) {
             sql = "SELECT time, players FROM statistics;";
         } else {
-            sql = String.format("SELECT time, players FROM statistics WHERE server_id=%d;", serverId);
+            sql = String.format("SELECT time, online FROM statistics WHERE server_id=%d;", serverId);
         }
 
         List<Map<String, Object>> rows = template.queryForList(sql);
@@ -306,7 +306,7 @@ public class DataAnalysisService {
         float[] records = {0f, 0f, 0f, 0f, 0f, 0f, 0f};
         for (Map<String, Object> row : rows) {
             Timestamp timestamp = (Timestamp) row.get("time");
-            int players = (Integer) row.get("players");
+            int players = (Integer) row.get("online");
             LocalDateTime time = timestamp.toLocalDateTime();
 
             switch (time.getDayOfWeek()) {
@@ -386,10 +386,10 @@ public class DataAnalysisService {
         if (serverId == null) {
             sql = "SELECT map FROM statistics;";
         } else if ((start == null) || (finish == null)) {
-            sql = String.format("SELECT map FROM statistics WHERE server_id=%s AND players=%d;",
+            sql = String.format("SELECT map FROM statistics WHERE server_id=%s AND online=%d;",
                     serverId, players);
         } else {
-            sql = String.format("SELECT map FROM statistics WHERE server_id=%s AND players=%d AND time >= timestamp '%s' AND time < timestamp '%s';",
+            sql = String.format("SELECT map FROM statistics WHERE server_id=%s AND online=%d AND time >= timestamp '%s' AND time < timestamp '%s';",
                     serverId, players, start, finish);
         }
 

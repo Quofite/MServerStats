@@ -26,7 +26,7 @@ public class MapStatsCaching extends Thread {
         float count;
         List<String> maps = dataAnalysisService.getMaps(null, 0, null, null);
         for (String map : maps) {
-            sql = String.format("SELECT SUM(players) FROM statistics WHERE map='%s';", map);
+            sql = String.format("SELECT SUM(online) FROM statistics WHERE map='%s';", map);
             players = (Long) template.queryForMap(sql).get("sum");
 
             sql = String.format("SELECT COUNT(*) FROM statistics WHERE map='%s';", map);

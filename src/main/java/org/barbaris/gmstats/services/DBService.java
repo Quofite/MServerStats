@@ -1,9 +1,11 @@
 package org.barbaris.gmstats.services;
 
+import com.google.gson.Gson;
 import org.barbaris.gmstats.models.GraphDataModel;
 import org.barbaris.gmstats.models.InstantDataModel;
 import org.barbaris.gmstats.models.ServerModel;
 import org.barbaris.gmstats.models.Values;
+import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -60,7 +62,7 @@ public class DBService {
         List<GraphDataModel> stats = new ArrayList<>();
         for (Map<String, Object> row : rows) {
             GraphDataModel stat = new GraphDataModel();
-            stat.setOnline(Float.parseFloat(String.valueOf(row.get("players"))));
+            stat.setOnline(Float.parseFloat(String.valueOf(row.get("online"))));
             stat.setMap((String) row.get("map"));
 
             LocalDateTime timeLDT = ((Timestamp) row.get("time")).toLocalDateTime();
@@ -77,7 +79,7 @@ public class DBService {
         Timestamp date = utils.stringToTimestamp(dateString, 0);
         Timestamp nextDay = utils.stringToTimestamp(dateString, 1);
 
-        String sql = String.format("SELECT MAX(players) FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s';",
+        String sql = String.format("SELECT MAX(online) FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s';",
                 serverId, date, nextDay);
 
         return (int) template.queryForMap(sql).get("max");
@@ -92,7 +94,7 @@ public class DBService {
     // first=true -> first record timestamp
     // first=false -> last record timestamp
     public Timestamp serverEdgeTime(String serverId, boolean first) {
-        String sql = String.format("SELECT time FROM statistics WHERE server_id=%s ORDER BY id", serverId);
+        String sql = String.format("SELECT time FROM statistics WHERE server_id=%s ORDER BY time", serverId);
 
         if (first) {
             sql += " LIMIT 1;";
@@ -123,11 +125,11 @@ public class DBService {
     public InstantDataModel getInstantData(String serverId, String timestamp) {
         InstantDataModel data = new InstantDataModel();
 
-        String sql = String.format("SELECT hostname, players, map FROM statistics WHERE server_id=%s AND to_char(time, 'DD.MM.YYYY HH24:MI')='%s';", serverId, timestamp);
+        String sql = String.format("SELECT hostname, online, map FROM statistics WHERE server_id=%s AND to_char(time, 'DD.MM.YYYY HH24:MI')='%s';", serverId, timestamp);
         try {
             Map<String, Object> row = template.queryForMap(sql);
 
-            data.setOnline((Integer) row.get("players"));
+            data.setOnline((Integer) row.get("online"));
             data.setMap((String) row.get("map"));
             data.setTimestamp(timestamp);
             data.setHostname((String) row.get("hostname"));
@@ -141,6 +143,7 @@ public class DBService {
     // --------------------- DATABASE MANIPULATING SCRIPTS (these scripts are to be re-written in Go and moved to small rarely-used microservice)
 
     public void initializeDatabase() {
+        template.execute("DROP TABLE goodservers;");
 
         try (FileReader fr = new FileReader("/home/gleb/Coding/gm/createGoodServersTable.sql")) {
             StringBuilder sql = new StringBuilder();
@@ -159,27 +162,29 @@ public class DBService {
 
     // This method fills new database table with non-empty and non-test servers
     public void regroupServers() {
-
         String sql = "SELECT * FROM servers;";
         List<Map<String, Object>> dbdata = template.queryForList(sql);
         List<ServerModel> servers = new ArrayList<>();
         List<ServerModel> nonEmptyServers = new ArrayList<>();
 
-
         for (Map<String, Object> data : dbdata) {
-
             ServerModel server = new ServerModel();
             server.setHostname((String) data.get("hostname"));
             server.setMid((Integer) data.get("mid"));
 
             if (server.getHostname().contains(" TEST ")) continue;
-            if (utils.isBadId(server.getMid())) continue;
+            //if (utils.isBadId(server.getMid())) continue;
 
-            server.setId((Integer) data.get("id"));
             server.setMap((String) data.get("map"));
             server.setIp((String) data.get("ip"));
             server.setPort((Integer) data.get("port"));
-            server.setOwner((String) data.get("owner"));
+
+            if(data.get("owner") != null) {
+                server.setOwner(((PGobject) data.get("owner")).getValue());
+            } else {
+                server.setOwner(null);
+            }
+
             servers.add(server);
         }
 
@@ -187,19 +192,15 @@ public class DBService {
             sql = String.format("SELECT * FROM statistics WHERE server_id=%d;", server.getMid());
             List<Map<String, Object>> records = template.queryForList(sql);
 
-            if (!records.isEmpty()) {
-                for (Map<String, Object> record : records) {
-                    if (record.get("players_json") != null) {
-                        nonEmptyServers.add(server);
-                        break;
-                    }
-                }
+            if(records.size() > 2000) {
+                nonEmptyServers.add(server);
             }
         }
 
         for (ServerModel s : nonEmptyServers) {
-            sql = String.format("INSERT INTO goodservers (id, mid, hostname, map, ip, port, owner) VALUES (%d, %d, '%s', '%s', '%s', %d, '%s');",
-                    s.getId(), s.getMid(), s.getHostname(), s.getMap(), s.getIp(), s.getPort(), s.getOwner());
+            System.out.println(s.getHostname());
+            sql = String.format("INSERT INTO goodservers (mid, hostname, map, ip, port, owner) VALUES (%d, '%s', '%s', '%s', %d, '%s');",
+                    s.getMid(), s.getHostname(), s.getMap(), s.getIp(), s.getPort(), s.getOwner());
             template.execute(sql);
         }
     }
