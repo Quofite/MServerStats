@@ -1,33 +1,15 @@
 package org.barbaris.gmstats.services;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import org.barbaris.gmstats.models.OnlinePerMap;
 import org.barbaris.gmstats.models.OnlinePerTime;
 import org.barbaris.gmstats.models.Values;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-
 @Component
 public class Utils {
-
-    /*
-    // this method checks if server is dev or test one
-    // TODO: rewrite it so this method would automatically seek for test and dev servers by certain parameters
-    public boolean isBadId(int id) {
-        int[] testServers = {14088, 14488, 14470, 14467, 14458, 14454, 14412, 14357, 14149, 14154, 14165, 14157, 14114, 14088, 14564, 14565, 14566};
-
-        for(int i : testServers) {
-            if(id == i) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-    */
-
 
     public Timestamp stringToTimestamp(String date, int plusDays) {
         String[] dateParts =  date.split("\\.");

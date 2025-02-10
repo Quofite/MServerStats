@@ -1,3 +1,6 @@
+const errorText =
+	"Произошла ошибка при выполнении запроса. Возможно, не все данные еще обновились или их попросту нет об этом сервере.";
+
 let maxAverageOnline = 0.0;
 const onlineRateColorScheme = ["#8b0000", "#ffd700", "#008000", "#4169e1"];
 const serverId = new URLSearchParams(document.location.search).get("id");
@@ -70,7 +73,7 @@ async function getData() {
 
 		drawGraph(data);
 	} else {
-		alert(response.status);
+		alert(errorText);
 	}
 }
 
@@ -96,7 +99,7 @@ async function getAvgOnlineData() {
 
 		drawAvgOnlineGraph(data);
 	} else {
-		alert(response.status);
+		alert(errorText);
 	}
 }
 
@@ -124,7 +127,7 @@ async function getMapsOnlineData(mapsAmount) {
 
 		drawMapsOnlineGraph(data);
 	} else {
-		alert(response.status);
+		alert(errorText);
 	}
 }
 

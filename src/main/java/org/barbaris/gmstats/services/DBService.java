@@ -1,6 +1,11 @@
 package org.barbaris.gmstats.services;
 
-import com.google.gson.Gson;
+import java.io.FileReader;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.barbaris.gmstats.models.GraphDataModel;
 import org.barbaris.gmstats.models.InstantDataModel;
 import org.barbaris.gmstats.models.ServerModel;
@@ -9,13 +14,6 @@ import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-
-import java.io.FileReader;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class DBService {
@@ -55,7 +53,7 @@ public class DBService {
         Timestamp date = utils.stringToTimestamp(dateString, 0);
         Timestamp nextDate = utils.stringToTimestamp(dateString, 1);
 
-        String sql = String.format("SELECT * FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s' ORDER BY id;",
+        String sql = String.format("SELECT online, map, time FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s' ORDER BY id;",
                 serverId, date, nextDate);
         List<Map<String, Object>> rows = template.queryForList(sql);
 
@@ -108,7 +106,7 @@ public class DBService {
 
     public ArrayList<ServerModel> getGoodServers() {
         ArrayList<ServerModel> servers = new ArrayList<>();
-        String sql = "SELECT * FROM goodservers;";
+        String sql = "SELECT hostname, mid FROM goodservers;";
         List<Map<String, Object>> rows = template.queryForList(sql);
 
         for (Map<String, Object> row : rows) {
@@ -189,10 +187,10 @@ public class DBService {
         }
 
         for (ServerModel server : servers) {
-            sql = String.format("SELECT * FROM statistics WHERE server_id=%d;", server.getMid());
-            List<Map<String, Object>> records = template.queryForList(sql);
+            sql = String.format("SELECT COUNT(*) FROM statistics WHERE server_id=%d;", server.getMid());
+            Map<String, Object> records = template.queryForMap(sql);
 
-            if(records.size() > 2000) {
+            if((Integer) records.get("count") > 2000) {
                 nonEmptyServers.add(server);
             }
         }

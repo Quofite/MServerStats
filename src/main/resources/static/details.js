@@ -1,3 +1,5 @@
+const errorText =
+	"Произошла ошибка при выполнении запроса. Возможно, не все данные еще обновились или их попросту нет об этом сервере.";
 const onlineRateColorScheme = ["#8b0000", "#ffd700", "#008000", "#4169e1"];
 
 let maxOnline = 0;
@@ -55,7 +57,7 @@ async function getData() {
 
 		drawGraph(data);
 	} else {
-		alert(response.status);
+		alert(errorText);
 	}
 }
 

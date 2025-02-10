@@ -1,3 +1,6 @@
+const errorText =
+	"Произошла ошибка при выполнении запроса. Возможно, не все данные еще обновились или их попросту нет об этом сервере.";
+
 const colors = [
 	"#00cc99",
 	"#006699",
@@ -106,7 +109,7 @@ async function loadData() {
 
 		drawGraphs(data);
 	} else {
-		alert("Словил маслину с кодом " + response.status);
+		alert(errorText);
 	}
 }
 

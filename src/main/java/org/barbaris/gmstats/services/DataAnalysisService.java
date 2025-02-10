@@ -1,12 +1,5 @@
 package org.barbaris.gmstats.services;
 
-import com.google.gson.Gson;
-import org.barbaris.gmstats.models.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-
 import java.sql.Timestamp;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -16,6 +9,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
+import org.barbaris.gmstats.models.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
 
 @Service
 public class DataAnalysisService {
@@ -38,7 +38,7 @@ public class DataAnalysisService {
      * */
     public DataAnalysisModel averagePlayersPerDay(String serverId) {
 
-        String sql = "SELECT * FROM statistics WHERE server_id=" + serverId + " ORDER BY id;";
+        String sql = "SELECT online, time FROM statistics WHERE server_id=" + serverId + " ORDER BY id;";
         List<Map<String, Object>> rows = template.queryForList(sql);
 
         sql = "SELECT COUNT(*) FROM statistics WHERE server_id=" + serverId + ";";
@@ -102,7 +102,7 @@ public class DataAnalysisService {
      * @return list of servers sorted by average online
      *  */
     public ArrayList<ServerModel> popularServers(boolean reversed) {
-        String sql = "SELECT * FROM cache;";
+        String sql = "SELECT server_id, hostname, average_online FROM cache;";
         ArrayList<ServerModel> servers = new ArrayList<>();
         List<Map<String, Object>> rows = template.queryForList(sql);
 
@@ -218,7 +218,7 @@ public class DataAnalysisService {
      * @return data for graph presentation
      * */
     public List<GraphDataModel> getGraphData(String serverId, float maxAverageOnline, Timestamp start, Timestamp stop) {
-        String sql = String.format("SELECT * FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s' ORDER BY id;",
+        String sql = String.format("SELECT time, online FROM statistics WHERE server_id=%s AND time >= timestamp '%s' AND time < timestamp '%s' ORDER BY id;",
                 serverId, start, stop);
         ArrayList<GraphDataModel> data = new ArrayList<>();
 

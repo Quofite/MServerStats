@@ -1,13 +1,12 @@
 package org.barbaris.gmstats.services.caching;
 
-import com.google.gson.Gson;
-import org.barbaris.gmstats.models.OnlinePerTime;
-import org.barbaris.gmstats.services.DBService;
-import org.barbaris.gmstats.services.Utils;
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.barbaris.gmstats.models.OnlinePerTime;
+import org.barbaris.gmstats.services.Utils;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.google.gson.Gson;
+
 
 public class OnlinePerTimesCaching extends Thread {
     private final JdbcTemplate template;
@@ -44,7 +43,6 @@ public class OnlinePerTimesCaching extends Thread {
                 count = (Long) template.queryForMap(sql).get("count");
 
                 onlinePerTimes.add(new OnlinePerTime(time, (players / count)));
-                System.out.printf("%d\t%s\n", id, time);
             } catch (NullPointerException ex) {
                 onlinePerTimes.add(new OnlinePerTime(time, 0));
             }
@@ -53,8 +51,5 @@ public class OnlinePerTimesCaching extends Thread {
         sql = String.format("UPDATE cache SET average_onlines_per_times='%s' WHERE server_id=%d;", gson.toJson(onlinePerTimes), id);
         template.execute(sql);
         System.out.printf("%d ENDED\n", id);
-
-
-        System.out.println("Times caching done!");
     }
 }

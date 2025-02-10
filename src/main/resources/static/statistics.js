@@ -1,3 +1,6 @@
+const errorText =
+	"Произошла ошибка при выполнении запроса. Возможно, не все данные еще обновились или их попросту нет об этом сервере.";
+
 function drawGraph(data) {
 	document.getElementById("container").innerHTML = "";
 	const chart = anychart.line(data);
@@ -41,7 +44,7 @@ async function getData() {
 
 		drawGraph(data);
 	} else {
-		alert(resposne.status);
+		alert(errorText);
 	}
 }
 
@@ -66,7 +69,7 @@ async function getPieData(mapsAmount) {
 
 		drawPieGraph(data);
 	} else {
-		alert(resposne.status);
+		alert(errorText);
 	}
 }
 
